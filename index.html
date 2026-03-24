@@ -2,23 +2,58 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>FPS Zombie Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FPS Zombie - Meraviglia</title>
     <link rel="stylesheet" href="css/style.css">
+    <!-- Three.js CDN -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
+    <div id="crosshair"></div>
+    
     <div id="ui">
-        <div id="health">Health: <span id="healthValue">100</span></div>
-        <div id="ammo">Ammo: <span id="ammoValue">30</span></div>
-        <div id="score">Score: <span id="scoreValue">0</span></div>
-    </div>
-    <div id="gameOver">
-        <div id="gameOverContent">
-            <h1>GAME OVER</h1>
-            <p>Final Score: <span id="finalScore">0</span></p>
-            <button id="restartButton">Restart</button>
+        <div class="stat-box">
+            <div class="label">HEALTH</div>
+            <div class="value" id="healthValue">100</div>
+            <div class="bar-container"><div id="healthBar" class="bar"></div></div>
+        </div>
+        <div class="stat-box">
+            <div class="label">AMMO</div>
+            <div class="value"><span id="ammoValue">30</span> / <span id="maxAmmoValue">30</span></div>
+            <div class="bar-container"><div id="ammoBar" class="bar"></div></div>
+        </div>
+        <div class="stat-box">
+            <div class="label">SCORE</div>
+            <div class="value" id="scoreValue">0</div>
         </div>
     </div>
-    <script src="js/game.js"></script>
+
+    <div id="instructions">
+        <div class="content">
+            <h1>FPS ZOMBIE: MERAVIGLIA</h1>
+            <p>(W, A, S, D) di muoversi</p>
+            <p>(MOUSE) per guardarsi intorno</p>
+            <p>(CLICK) per sparare</p>
+            <p>Clicca per iniziare</p>
+        </div>
+    </div>
+
+    <div id="gameOver">
+        <div class="content">
+            <h1>MISSIONE FALLITA</h1>
+            <p>Sei stato sopraffatto.</p>
+            <p>Punteggio Finale: <span id="finalScore">0</span></p>
+            <button id="restartButton">RICOMINCIA</button>
+        </div>
+    </div>
+
+    <script type="module" src="js/game.js"></script>
 </body>
 </html>

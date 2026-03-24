@@ -1,299 +1,389 @@
-// Game constants
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+import * as THREE from 'three';
+import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+// Game Constants
+const MOVEMENT_SPEED = 0.15;
+const ZOMBIE_SPEED = 0.05;
+const SPAWN_INTERVAL = 3000;
+const MAX_HEALTH = 100;
+const MAX_AMMO = 30;
+
+// Game State
+let health = MAX_HEALTH;
+let ammo = MAX_AMMO;
+let score = 0;
+let isGameOver = false;
+let moveForward = false;
+let moveBackward = false;
+let moveLeft = false;
+let moveRight = false;
+let prevTime = performance.now();
+const velocity = new THREE.Vector3();
+const direction = new THREE.Vector3();
+
+// Three.js Objects
+let scene, camera, renderer, controls, flashlight, gun, muzzleFlash;
+let floor, walls = [];
+let zombies = [];
+let particles = [];
+let raycaster = new THREE.Raycaster();
+
+// UI Elements
 const healthValue = document.getElementById('healthValue');
 const ammoValue = document.getElementById('ammoValue');
 const scoreValue = document.getElementById('scoreValue');
+const healthBar = document.getElementById('healthBar');
+const ammoBar = document.getElementById('ammoBar');
 const gameOverScreen = document.getElementById('gameOver');
-const finalScoreValue = document.getElementById('finalScore');
+const instructions = document.getElementById('instructions');
+const finalScore = document.getElementById('finalScore');
 const restartButton = document.getElementById('restartButton');
 
-// Set canvas size to window
-function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+function init() {
+    // Scene & Camera
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050505);
+    scene.fog = new THREE.FogExp2(0x050505, 0.15);
+
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.y = 1.6; // Eye level
+
+    // Renderer
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    document.body.appendChild(renderer.domElement);
+
+    // Controls
+    controls = new PointerLockControls(camera, document.body);
+
+    instructions.addEventListener('click', () => {
+        controls.lock();
+    });
+
+    controls.addEventListener('lock', () => {
+        instructions.style.display = 'none';
+    });
+
+    controls.addEventListener('unlock', () => {
+        if (!isGameOver) {
+            instructions.style.display = 'flex';
+        }
+    });
+
+    scene.add(controls.getObject());
+
+    // Event Listeners for controls
+    const onKeyDown = (event) => {
+        switch (event.code) {
+            case 'ArrowUp':
+            case 'KeyW': moveForward = true; break;
+            case 'ArrowLeft':
+            case 'KeyA': moveLeft = true; break;
+            case 'ArrowDown':
+            case 'KeyS': moveBackward = true; break;
+            case 'ArrowRight':
+            case 'KeyD': moveRight = true; break;
+        }
+    };
+
+    const onKeyUp = (event) => {
+        switch (event.code) {
+            case 'ArrowUp':
+            case 'KeyW': moveForward = false; break;
+            case 'ArrowLeft':
+            case 'KeyA': moveLeft = false; break;
+            case 'ArrowDown':
+            case 'KeyS': moveBackward = false; break;
+            case 'ArrowRight':
+            case 'KeyD': moveRight = false; break;
+            case 'KeyR': reload(); break;
+        }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('keyup', onKeyUp);
+    document.addEventListener('mousedown', shoot);
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+    scene.add(ambientLight);
+
+    flashlight = new THREE.SpotLight(0xffffff, 5);
+    flashlight.angle = Math.PI / 6;
+    flashlight.penumbra = 0.3;
+    flashlight.decay = 2;
+    flashlight.distance = 50;
+    flashlight.castShadow = true;
+    
+    // Attach flashlight to camera
+    scene.add(flashlight);
+    flashlight.target = new THREE.Object3D();
+    scene.add(flashlight.target);
+
+    // Floor
+    const floorGeometry = new THREE.PlaneGeometry(100, 100);
+    const floorMaterial = new THREE.MeshStandardMaterial({ 
+        color: 0x222222, 
+        roughness: 0.8,
+        metalness: 0.2
+    });
+    floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    // Walls (Boundary)
+    const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x111111 });
+    const createWall = (w, h, d, x, y, z) => {
+        const geo = new THREE.BoxGeometry(w, h, d);
+        const mesh = new THREE.Mesh(geo, wallMaterial);
+        mesh.position.set(x, y, z);
+        mesh.receiveShadow = true;
+        scene.add(mesh);
+        walls.push(mesh);
+    };
+
+    createWall(100, 10, 1, 0, 5, -50); // North
+    createWall(100, 10, 1, 0, 5, 50);  // South
+    createWall(1, 10, 100, -50, 5, 0); // West
+    createWall(1, 10, 100, 50, 5, 0);  // East
+
+    // Gun Model
+    createGun();
+
+    // Start zombie spawning
+    setInterval(spawnZombie, SPAWN_INTERVAL);
+
+    animate();
 }
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
 
-// Game state
-const keys = {};
-const mouse = { x: 0, y: 0, down: false };
-const bullets = [];
-const zombies = [];
-const particles = [];
+function createGun() {
+    gun = new THREE.Group();
+    
+    // Gun body
+    const bodyGeo = new THREE.BoxGeometry(0.2, 0.3, 1);
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    gun.add(body);
+    
+    // Handle
+    const handleGeo = new THREE.BoxGeometry(0.18, 0.5, 0.2);
+    const handle = new THREE.Mesh(handleGeo, bodyMat);
+    handle.position.set(0, -0.3, 0.3);
+    gun.add(handle);
+    
+    gun.position.set(0.4, -0.4, -0.5);
+    camera.add(gun);
+    
+    // Muzzle flash
+    const flashGeo = new THREE.SphereGeometry(0.15, 8, 8);
+    const flashMat = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0 });
+    muzzleFlash = new THREE.Mesh(flashGeo, flashMat);
+    muzzleFlash.position.set(0, 0, -0.6);
+    gun.add(muzzleFlash);
+}
 
-const player = {
-    x: canvas.width / 2,
-    y: canvas.height / 2,
-    size: 30,
-    speed: 5,
-    angle: 0,
-    health: 100,
-    maxHealth: 100,
-    ammo: 30,
-    maxAmmo: 30,
-    reloadTime: 0,
-    reloadDuration: 60 // frames
-};
-
-const zombieSpawnTimer = 0;
-const zombieSpawnInterval = 180; // 3 seconds at 60fps
-const zombieSpeed = 1.5;
-const zombieSize = 40;
-const zombieHealth = 30;
-
-const bulletSpeed = 10;
-const bulletSize = 5;
-const bulletDamage = 10;
-
-// Game state
-let score = 0;
-let gameOver = false;
-
-// Input handling
-window.addEventListener('keydown', e => keys[e.code] = true);
-window.addEventListener('keyup', e => keys[e.code] = false);
-window.addEventListener('mousemove', e => {
-    const rect = canvas.getBoundingClientRect();
-    mouse.x = e.clientX - rect.left;
-    mouse.y = e.clientY - rect.top;
-});
-window.addEventListener('mousedown', e => { if (e.button === 0) mouse.down = true; });
-window.addEventListener('mouseup', e => { if (e.button === 0) mouse.down = false; });
-
-// Game functions
 function spawnZombie() {
-    const side = Math.floor(Math.random() * 4); // 0:top,1:right,2:bottom,3:left
-    let x, y;
-    if (side === 0) { x = Math.random() * canvas.width; y = -zombieSize; }
-    else if (side === 1) { x = canvas.width + zombieSize; y = Math.random() * canvas.height; }
-    else if (side === 2) { x = Math.random() * canvas.width; y = canvas.height + zombieSize; }
-    else { x = -zombieSize; y = Math.random() * canvas.height; }
-    zombies.push({ x, y, size: zombieSize, speed: zombieSpeed, health: zombieHealth });
-}
+    if (isGameOver || !controls.isLocked) return;
 
-function updateBullets() {
-    for (let i = bullets.length - 1; i >= 0; i--) {
-        const b = bullets[i];
-        b.x += b.dx;
-        b.y += b.dy;
-        // Remove if out of bounds
-        if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) {
-            bullets.splice(i, 1);
-            continue;
-        }
-        // Check collision with zombies
-        for (let j = zombies.length - 1; j >= 0; j--) {
-            const z = zombies[j];
-            const dx = b.x - z.x;
-            const dy = b.y - z.y;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            if (dist < z.size/2 + b.size/2) {
-                z.health -= bulletDamage;
-                // Create hit particles
-                for (let k = 0; k < 5; k++) {
-                    particles.push({
-                        x: b.x, y: b.y,
-                        vx: (Math.random() - 0.5) * 5,
-                        vy: (Math.random() - 0.5) * 5,
-                        life: 20,
-                        size: 2
-                    });
-                }
-                bullets.splice(i, 1);
-                if (z.health <= 0) {
-                    zombies.splice(j, 1);
-                    score += 10; // Increase score for killing zombie
-                }
-                break;
-            }
-        }
-    }
-}
+    const angle = Math.random() * Math.PI * 2;
+    const distance = 40 + Math.random() * 10;
+    const x = Math.cos(angle) * distance;
+    const z = Math.sin(angle) * distance;
 
-function updateZombies() {
-    for (let z of zombies) {
-        // Move towards player
-        const dx = player.x - z.x;
-        const dy = player.y - z.y;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist > 0) {
-            z.x += (dx/dist) * z.speed;
-            z.y += (dy/dist) * z.speed;
-        }
-        // Collision with player
-        const px = player.x - z.x;
-        const py = player.y - z.y;
-        const pDist = Math.sqrt(px*px + py*py);
-        if (pDist < player.size/2 + z.size/2) {
-            player.health -= 0.5; // damage per frame
-            if (player.health <= 0) {
-                player.health = 0;
-                gameOver = true;
-            }
-        }
-    }
-}
-
-function updateParticles() {
-    for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life--;
-        if (p.life <= 0) particles.splice(i, 1);
-    }
-}
-
-function updatePlayer() {
-    if (gameOver) return;
+    const geo = new THREE.BoxGeometry(0.8, 1.8, 0.8);
+    const mat = new THREE.MeshStandardMaterial({ color: 0x445500 }); // Sickly green
+    const zombie = new THREE.Mesh(geo, mat);
+    zombie.position.set(x, 0.9, z);
+    zombie.castShadow = true;
     
-    // Movement
-    if (keys['KeyW'] || keys['ArrowUp']) player.y -= player.speed;
-    if (keys['KeyS'] || keys['ArrowDown']) player.y += player.speed;
-    if (keys['KeyA'] || keys['ArrowLeft']) player.x -= player.speed;
-    if (keys['KeyD'] || keys['ArrowRight']) player.x += player.speed;
-    // Keep player in bounds
-    player.x = Math.max(player.size/2, Math.min(canvas.width - player.size/2, player.x));
-    player.y = Math.max(player.size/2, Math.min(canvas.height - player.size/2, player.y));
-    // Shooting
-    if (mouse.down && player.ammo > 0 && player.reloadTime <= 0) {
-        const angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
-        bullets.push({
-            x: player.x,
-            y: player.y,
-            size: bulletSize,
-            dx: Math.cos(angle) * bulletSpeed,
-            dy: Math.sin(angle) * bulletSpeed
-        });
-        player.ammo--;
-        if (player.ammo === 0) player.reloadTime = player.reloadDuration;
-    }
-    // Reload
-    if (player.reloadTime > 0) player.reloadTime--;
-    if (player.reloadTime === 0 && player.ammo === 0) {
-        player.ammo = player.maxAmmo;
-    }
-    // Health regen (optional)
-    if (player.health < player.maxHealth) player.health += 0.05;
+    // Add "eyes"
+    const eyeGeo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+    const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+    eyeL.position.set(0.2, 0.5, 0.4);
+    eyeR.position.set(-0.2, 0.5, 0.4);
+    zombie.add(eyeL, eyeR);
+
+    scene.add(zombie);
+    zombies.push({ 
+        mesh: zombie, 
+        health: 30,
+        speed: ZOMBIE_SPEED + Math.random() * 0.02
+    });
 }
 
-function drawPlayer() {
-    ctx.save();
-    ctx.translate(player.x, player.y);
-    ctx.rotate(Math.atan2(mouse.y - player.y, mouse.x - player.x));
-    ctx.fillStyle = '#0f0';
-    ctx.beginPath();
-    ctx.moveTo(player.size/2, 0);
-    ctx.lineTo(-player.size/2, -player.size/3);
-    ctx.lineTo(-player.size/4, 0);
-    ctx.lineTo(-player.size/2, player.size/3);
-    ctx.lineTo(player.size/2, 0);
-    ctx.fill();
-    ctx.restore();
-}
+function shoot() {
+    if (isGameOver || !controls.isLocked || ammo <= 0) return;
 
-function drawZombies() {
-    ctx.fillStyle = '#f00';
-    for (const z of zombies) {
-        ctx.beginPath();
-        ctx.arc(z.x, z.y, z.size/2, 0, Math.PI*2);
-        ctx.fill();
-    }
-}
+    ammo--;
+    updateUI();
 
-function drawBullets() {
-    ctx.fillStyle = '#ff0';
-    for (const b of bullets) {
-        ctx.beginPath();
-        ctx.rect(b.x - b.size/2, b.y - b.size/2, b.size, b.size);
-        ctx.fill();
+    // Flash effect
+    muzzleFlash.material.opacity = 1;
+    setTimeout(() => { muzzleFlash.material.opacity = 0; }, 50);
+
+    // Gun recoil animation
+    gun.position.z += 0.1;
+    setTimeout(() => { gun.position.z -= 0.1; }, 100);
+
+    // Raycast from camera center
+    raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+    const intersects = raycaster.intersectObjects(zombies.map(z => z.mesh));
+
+    if (intersects.length > 0) {
+        const hitPoint = intersects[0].point;
+        const hitMesh = intersects[0].object;
+        const zombieIndex = zombies.findIndex(z => z.mesh === hitMesh);
+        
+        spawnBlood(hitPoint);
+
+        if (zombieIndex !== -1) {
+            zombies[zombieIndex].health -= 10;
+            if (zombies[zombieIndex].health <= 0) {
+                scene.remove(hitMesh);
+                zombies.splice(zombieIndex, 1);
+                score += 100;
+                updateUI();
+            }
+        }
     }
 }
 
-function drawParticles() {
-    for (const p of particles) {
-        ctx.fillStyle = `rgba(255,165,0,${p.life/20})`;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
-        ctx.fill();
+function spawnBlood(position) {
+    for (let i = 0; i < 10; i++) {
+        const geo = new THREE.SphereGeometry(0.05, 4, 4);
+        const mat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        const p = new THREE.Mesh(geo, mat);
+        p.position.copy(position);
+        
+        const velocity = new THREE.Vector3(
+            (Math.random() - 0.5) * 0.1,
+            (Math.random() - 0.5) * 0.1,
+            (Math.random() - 0.5) * 0.1
+        );
+        
+        scene.add(p);
+        particles.push({ mesh: p, velocity, life: 30 });
     }
 }
 
-function drawUI() {
-    healthValue.textContent = Math.floor(player.health);
-    ammoValue.textContent = player.ammo;
+function reload() {
+    if (ammo < MAX_AMMO) {
+        ammo = MAX_AMMO;
+        updateUI();
+    }
+}
+
+function updateUI() {
+    healthValue.textContent = Math.ceil(health);
+    ammoValue.textContent = ammo;
     scoreValue.textContent = score;
+    healthBar.style.width = `${health}%`;
+    ammoBar.style.width = `${(ammo / MAX_AMMO) * 100}%`;
+
+    if (health < 30) healthBar.style.background = '#ff0000';
+    else if (health < 60) healthBar.style.background = '#ffaa00';
+    else healthBar.style.background = '#00ff00';
 }
 
-function drawGameOver() {
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    ctx.fillStyle = '#fff';
-    ctx.font = '48px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 50);
-    
-    ctx.font = '24px Arial';
-    ctx.fillText('Final Score: ' + score, canvas.width / 2, canvas.height / 2);
-    
-    ctx.font = '18px Arial';
-    ctx.fillText('Click Restart to Play Again', canvas.width / 2, canvas.height / 2 + 40);
-}
+function animate() {
+    requestAnimationFrame(animate);
 
-function clear() {
-    ctx.fillStyle = '#111';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
+    if (isGameOver) return;
 
-function gameLoop() {
-    clear();
-    if (!gameOver) {
-        updatePlayer();
-        updateBullets();
-        updateZombies();
-        updateParticles();
-        // Spawn zombies
-        zombieSpawnTimer++;
-        if (zombieSpawnTimer >= zombieSpawnInterval) {
-            spawnZombie();
-            zombieSpawnTimer = 0;
+    const time = performance.now();
+    const delta = (time - prevTime) / 1000;
+
+    if (controls.isLocked) {
+        // Movement
+        velocity.x -= velocity.x * 10.0 * delta;
+        velocity.z -= velocity.z * 10.0 * delta;
+
+        direction.z = Number(moveForward) - Number(moveBackward);
+        direction.x = Number(moveRight) - Number(moveLeft);
+        direction.normalize();
+
+        if (moveForward || moveBackward) velocity.z -= direction.z * 400.0 * delta;
+        if (moveLeft || moveRight) velocity.x -= direction.x * 400.0 * delta;
+
+        controls.moveRight(-velocity.x * delta);
+        controls.moveForward(-velocity.z * delta);
+
+        // Flashlight follows camera
+        flashlight.position.copy(camera.position);
+        const targetOffset = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+        flashlight.target.position.copy(camera.position).add(targetOffset);
+
+        // Update Zombies
+        const playerPos = camera.position;
+        for (let i = zombies.length - 1; i >= 0; i--) {
+            const z = zombies[i];
+            const directionToPlayer = new THREE.Vector3().subVectors(playerPos, z.mesh.position).normalize();
+            z.mesh.position.x += directionToPlayer.x * z.speed;
+            z.mesh.position.z += directionToPlayer.z * z.speed;
+            z.mesh.lookAt(playerPos.x, 0.9, playerPos.z);
+
+            // Collision with player
+            const dist = z.mesh.position.distanceTo(playerPos);
+            if (dist < 1.5) {
+                health -= 0.5; // Increased damage
+                updateUI();
+                if (health <= 0) endGame();
+            }
+        }
+
+        // Update Particles
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.mesh.position.add(p.velocity);
+            p.life--;
+            if (p.life <= 0) {
+                scene.remove(p.mesh);
+                particles.splice(i, 1);
+            }
         }
     }
-    drawPlayer();
-    drawZombies();
-    drawBullets();
-    drawParticles();
-    drawUI();
-    if (gameOver) {
-        drawGameOver();
-    }
-    requestAnimationFrame(gameLoop);
+
+    prevTime = time;
+    renderer.render(scene, camera);
 }
 
-// Restart game function
+function endGame() {
+    isGameOver = true;
+    controls.unlock();
+    gameOverScreen.style.display = 'flex';
+    finalScore.textContent = score;
+}
+
 function restartGame() {
-    // Reset game state
-    player.x = canvas.width / 2;
-    player.y = canvas.height / 2;
-    player.health = player.maxHealth;
-    player.ammo = player.maxAmmo;
-    player.reloadTime = 0;
-    bullets.length = 0;
-    zombies.length = 0;
-    particles.length = 0;
+    health = MAX_HEALTH;
+    ammo = MAX_AMMO;
     score = 0;
-    gameOver = false;
-    zombieSpawnTimer = 0;
+    isGameOver = false;
     
-    // Hide game over screen
+    // Clear zombies
+    zombies.forEach(z => scene.remove(z.mesh));
+    zombies = [];
+    
+    // Reset player position
+    camera.position.set(0, 1.6, 0);
+    
+    updateUI();
     gameOverScreen.style.display = 'none';
+    instructions.style.display = 'flex';
 }
 
-// Event listeners
 restartButton.addEventListener('click', restartGame);
 
-// Start game
-gameLoop();
+// Handle window resize
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+init();
