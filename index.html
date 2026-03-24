@@ -3,57 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FPS Zombie - Meraviglia</title>
-    <link rel="stylesheet" href="css/style.css?v=2">
-    <!-- Three.js CDN -->
+    <meta name="theme-color" content="#09131c">
+    <title>FPS Zombie: Meraviglia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2309141f'/%3E%3Cpath d='M16 48 30 16h5L21 48z' fill='%23ff6a00'/%3E%3Cpath d='M36 16h12L28 48H16z' fill='%237dd3ff' opacity='.9'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="css/style.css?v=3">
     <script type="importmap">
         {
             "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
             }
         }
     </script>
 </head>
 <body>
-    <div id="crosshair"></div>
-    
-    <div id="ui">
-        <div class="stat-box">
-            <div class="label">HEALTH</div>
-            <div class="value" id="healthValue">100</div>
-            <div class="bar-container"><div id="healthBar" class="bar"></div></div>
+    <div id="gameRoot"></div>
+
+    <div id="screenFx">
+        <div id="damageFlash"></div>
+        <div id="lowHealthVignette"></div>
+        <div id="filmGrain"></div>
+    </div>
+
+    <div id="crosshair" aria-hidden="true">
+        <span class="crosshair-ring"></span>
+        <span class="crosshair-line horizontal"></span>
+        <span class="crosshair-line vertical"></span>
+        <span id="hitMarker"></span>
+    </div>
+
+    <div id="hud">
+        <div class="hud-top">
+            <div class="brand-block">
+                <span class="eyebrow">Quarantine Yard 17</span>
+                <span class="brand">Meraviglia</span>
+            </div>
+            <div class="objective-block">
+                <span class="eyebrow">Objective</span>
+                <span id="objectiveText" class="objective-text">Deploy and survive the first wave.</span>
+            </div>
         </div>
-        <div class="stat-box">
-            <div class="label">AMMO</div>
-            <div class="value"><span id="ammoValue">30</span> / <span id="maxAmmoValue">30</span></div>
-            <div class="bar-container"><div id="ammoBar" class="bar"></div></div>
+
+        <div id="waveBanner" class="wave-banner" aria-live="polite">
+            <span id="waveBannerTitle">Wave 1</span>
+            <span id="waveBannerSubtitle">Quarantine breach detected</span>
         </div>
-        <div class="stat-box">
-            <div class="label">SCORE</div>
-            <div class="value" id="scoreValue">0</div>
+
+        <div class="hud-bottom">
+            <div class="hud-column primary">
+                <div class="hud-card hud-health">
+                    <span class="eyebrow">Health</span>
+                    <div class="value-row">
+                        <span id="healthValue" class="value">100</span>
+                        <span class="value-suffix">HP</span>
+                    </div>
+                    <div class="meter"><div id="healthBar" class="meter-fill"></div></div>
+                </div>
+                <div class="hud-card hud-stamina">
+                    <span class="eyebrow">Stamina</span>
+                    <div class="value-row">
+                        <span id="staminaValue" class="value">100</span>
+                        <span class="value-suffix">SPRINT</span>
+                    </div>
+                    <div class="meter"><div id="staminaBar" class="meter-fill"></div></div>
+                </div>
+                <div class="hud-card hud-ammo">
+                    <span class="eyebrow">Ammo</span>
+                    <div class="value-row">
+                        <span id="ammoValue" class="value">30</span>
+                        <span class="value-suffix">/ <span id="reserveAmmoValue">180</span></span>
+                    </div>
+                    <div class="meter"><div id="ammoBar" class="meter-fill"></div></div>
+                </div>
+            </div>
+
+            <div class="hud-column secondary">
+                <div class="hud-card compact">
+                    <span class="eyebrow">Wave</span>
+                    <span id="waveValue" class="value small">1 / 5</span>
+                </div>
+                <div class="hud-card compact">
+                    <span class="eyebrow">Infected</span>
+                    <span id="aliveValue" class="value small">0</span>
+                </div>
+                <div class="hud-card compact">
+                    <span class="eyebrow">Score</span>
+                    <span id="scoreValue" class="value small">0</span>
+                </div>
+                <div class="hud-card compact combo-card">
+                    <span class="eyebrow">Combo</span>
+                    <span id="comboValue" class="value small">x1.0</span>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div id="instructions">
-        <div class="content">
-            <h1>FPS ZOMBIE: MERAVIGLIA</h1>
-            <p>(W, A, S, D) di muoversi</p>
-            <p>(MOUSE) per guardarsi intorno</p>
-            <p>(CLICK) per sparare</p>
-            <p>Clicca per iniziare</p>
+    <div id="overlay" class="overlay visible" data-mode="intro">
+        <div class="overlay-noise"></div>
+        <div class="overlay-panel">
+            <span id="overlayTag" class="overlay-tag">Arcade Zombie FPS</span>
+            <h1 id="overlayTitle">Meraviglia</h1>
+            <p id="overlayLead" class="overlay-lead">
+                Sunset over a broken quarantine yard. Five waves. One last extraction route. Keep moving and make the infected regret the breach.
+            </p>
+
+            <div class="control-grid">
+                <div class="control-item"><span>Move</span><strong>W A S D</strong></div>
+                <div class="control-item"><span>Look</span><strong>Mouse</strong></div>
+                <div class="control-item"><span>Fire</span><strong>Left Click</strong></div>
+                <div class="control-item"><span>Reload</span><strong>R</strong></div>
+                <div class="control-item"><span>Sprint</span><strong>Shift</strong></div>
+                <div class="control-item"><span>Shove</span><strong>F</strong></div>
+            </div>
+
+            <div class="overlay-actions">
+                <button id="startButton" class="primary-action">Deploy</button>
+                <button id="restartButton" class="secondary-action">Restart Run</button>
+            </div>
+
+            <p id="overlayMeta" class="overlay-meta">
+                Click deploy to lock in, flood the yard with muzzle flash, and survive the breach.
+            </p>
+            <p id="overlayScore" class="overlay-score"></p>
         </div>
     </div>
 
-    <div id="gameOver">
-        <div class="content">
-            <h1>MISSIONE FALLITA</h1>
-            <p>Sei stato sopraffatto.</p>
-            <p>Punteggio Finale: <span id="finalScore">0</span></p>
-            <button id="restartButton">RICOMINCIA</button>
-        </div>
-    </div>
-
-    <script type="module" src="js/game.js?v=2"></script>
+    <script type="module" src="js/game.js?v=3"></script>
 </body>
 </html>
