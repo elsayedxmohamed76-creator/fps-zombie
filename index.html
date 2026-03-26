@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#09131c">
     <title>FPS Zombie: Meraviglia</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -109,13 +112,21 @@
                 Sunset over a broken quarantine yard. Five waves. One last extraction route. Keep moving and make the infected regret the breach.
             </p>
 
-            <div class="control-grid">
+            <div class="control-grid" id="controlGridPC">
                 <div class="control-item"><span>Move</span><strong>W A S D</strong></div>
                 <div class="control-item"><span>Look</span><strong>Mouse</strong></div>
                 <div class="control-item"><span>Fire</span><strong>Left Click</strong></div>
                 <div class="control-item"><span>Reload</span><strong>R</strong></div>
                 <div class="control-item"><span>Sprint</span><strong>Shift</strong></div>
                 <div class="control-item"><span>Shove</span><strong>F</strong></div>
+            </div>
+            <div class="control-grid" id="controlGridTouch" style="display:none">
+                <div class="control-item"><span>Move</span><strong>Left Joystick</strong></div>
+                <div class="control-item"><span>Look</span><strong>Swipe Right</strong></div>
+                <div class="control-item"><span>Fire</span><strong>FIRE Button</strong></div>
+                <div class="control-item"><span>Reload</span><strong>R Button</strong></div>
+                <div class="control-item"><span>Sprint</span><strong>RUN Toggle</strong></div>
+                <div class="control-item"><span>Shove</span><strong>SHOVE Button</strong></div>
             </div>
 
             <div class="overlay-actions">
@@ -130,6 +141,15 @@
         </div>
     </div>
 
+    <script>
+        // Show touch controls on mobile devices
+        if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+            const pc = document.getElementById('controlGridPC');
+            const touch = document.getElementById('controlGridTouch');
+            if (pc) pc.style.display = 'none';
+            if (touch) touch.style.display = 'grid';
+        }
+    </script>
     <script type="module" src="js/game.js?v=3"></script>
 </body>
 </html>

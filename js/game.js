@@ -3,6 +3,7 @@ import { ProceduralAudio } from "./audio.js";
 import { ENEMY_TYPES, FIXED_DT, GAME_CONFIG, PICKUP_TYPES, WAVE_CONFIGS } from "./config.js";
 import { createEnemyMesh, createPickupMesh, createTracer, createWeaponMesh } from "./factories.js";
 import { UIController } from "./ui.js";
+import { TouchController } from "./touch.js";
 import { createWorld, moveAndCollide } from "./world.js";
 import { clamp, createRng, distanceXZ, forwardFromAngles, pickWeighted, range, shuffle } from "./utils.js";
 
@@ -101,6 +102,14 @@ class FPSZombieMeraviglia {
         this.prevDebugButtons = { reload: false, melee: false };
         this.player = null;
         this.state = null;
+
+        // Touch controls for mobile/cross-device support
+        this.isTouch = TouchController.isTouchDevice();
+        this.touchController = null;
+        if (this.isTouch) {
+            this.touchController = new TouchController(document.body);
+            this.touchController.show();
+        }
 
         this.bindEvents();
         this.prepareRun(this.baseSeed);
@@ -229,7 +238,7 @@ class FPSZombieMeraviglia {
                 this.beginRun();
                 this.ui.hideOverlay();
                 this.input.fire = false;
-            } else if (!this.options.debug && this.state.mode === "playing" && this.state.wave > 0) {
+            } else if (!this.options.debug && !this.isTouch && this.state.mode === "playing" && this.state.wave > 0) {
                 this.state.mode = "paused";
                 this.ui.showOverlay("paused", {
                     scoreText: `Score ${this.state.score.toLocaleString()}  •  Combo ${this.state.combo.toFixed(1)}`,
@@ -274,7 +283,7 @@ class FPSZombieMeraviglia {
     }
 
     requestPointerLock() {
-        if (this.options.debug) {
+        if (this.options.debug || this.isTouch) {
             this.beginRun();
             this.ui.hideOverlay();
             return;
@@ -435,6 +444,7 @@ class FPSZombieMeraviglia {
         this.elapsed += scaledDt;
 
         this.handleDebugEdges();
+        this.mergeTouchInput();
         this.updatePlayerLook(scaledDt);
 
         if (this.state.mode === "playing") {
@@ -485,6 +495,32 @@ class FPSZombieMeraviglia {
         }
         this.prevDebugButtons.reload = this.input.reload;
         this.prevDebugButtons.melee = this.input.melee;
+    }
+
+    mergeTouchInput() {
+        if (!this.isTouch || !this.touchController) {
+            return;
+        }
+        const ts = this.touchController.getState();
+        this.input.forward = ts.forward;
+        this.input.backward = ts.backward;
+        this.input.left = ts.left;
+        this.input.right = ts.right;
+        this.input.sprint = ts.sprint;
+        this.input.fire = ts.fire;
+        this.pendingLook.x += ts.pendingLookX;
+        this.pendingLook.y += ts.pendingLookY;
+        // Reset pending look so they don't accumulate
+        ts.pendingLookX = 0;
+        ts.pendingLookY = 0;
+        // Edge-triggered inputs
+        const edges = this.touchController.consumeEdges();
+        if (edges.reload) {
+            this.tryReload();
+        }
+        if (edges.melee) {
+            this.tryMelee();
+        }
     }
 
     updatePlayerLook(dt) {
