@@ -12,7 +12,10 @@ export class UIController {
         this.restartButton = document.getElementById("restartButton");
 
         this.healthValue = document.getElementById("healthValue");
+        this.armorValue = document.getElementById("armorValue");
         this.staminaValue = document.getElementById("staminaValue");
+        this.foodValue = document.getElementById("foodValue");
+        this.waterValue = document.getElementById("waterValue");
         this.ammoValue = document.getElementById("ammoValue");
         this.reserveAmmoValue = document.getElementById("reserveAmmoValue");
         this.waveValue = document.getElementById("waveValue");
@@ -20,9 +23,12 @@ export class UIController {
         this.scoreValue = document.getElementById("scoreValue");
         this.comboValue = document.getElementById("comboValue");
         this.objectiveText = document.getElementById("objectiveText");
-
+ 
         this.healthBar = document.getElementById("healthBar");
+        this.armorBar = document.getElementById("armorBar");
         this.staminaBar = document.getElementById("staminaBar");
+        this.foodBar = document.getElementById("foodBar");
+        this.waterBar = document.getElementById("waterBar");
         this.ammoBar = document.getElementById("ammoBar");
 
         this.damageFlash = document.getElementById("damageFlash");
@@ -45,7 +51,10 @@ export class UIController {
 
     update(snapshot, dt) {
         this.healthValue.textContent = Math.ceil(snapshot.player.health);
+        this.armorValue.textContent = Math.ceil(snapshot.player.armor);
         this.staminaValue.textContent = Math.ceil(snapshot.player.stamina);
+        this.foodValue.textContent = Math.ceil(snapshot.player.food);
+        this.waterValue.textContent = Math.ceil(snapshot.player.water);
         this.ammoValue.textContent = snapshot.player.ammo;
         this.reserveAmmoValue.textContent = snapshot.player.reserveAmmo;
         this.waveValue.textContent = formatWave(snapshot.wave, snapshot.totalWaves);
@@ -55,7 +64,10 @@ export class UIController {
         this.objectiveText.textContent = snapshot.objective;
 
         this.healthBar.style.width = `${snapshot.player.health}%`;
+        this.armorBar.style.width = `${snapshot.player.armor}%`;
         this.staminaBar.style.width = `${snapshot.player.stamina}%`;
+        this.foodBar.style.width = `${snapshot.player.food}%`;
+        this.waterBar.style.width = `${snapshot.player.water}%`;
         this.ammoBar.style.width = `${(snapshot.player.ammo / snapshot.player.maxAmmo) * 100}%`;
 
         this.healthBar.style.background = snapshot.player.health < 33
@@ -63,6 +75,14 @@ export class UIController {
             : snapshot.player.health < 66
                 ? "linear-gradient(90deg, #ffc857, #ff9f45)"
                 : "linear-gradient(90deg, #7dd3ff, #72ffc6)";
+
+        this.foodBar.style.background = snapshot.player.food < 20
+            ? "linear-gradient(90deg, #ff4d4d, #ff7b5c)"
+            : "linear-gradient(90deg, #ffa500, #ffd700)";
+
+        this.waterBar.style.background = snapshot.player.water < 20
+            ? "linear-gradient(90deg, #ff4d4d, #ff7b5c)"
+            : "linear-gradient(90deg, #00bfff, #1e90ff)";
 
         this.lowHealthVignette.style.opacity = String(clamp((33 - snapshot.player.health) / 33, 0, 1));
 

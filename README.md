@@ -1,9 +1,10 @@
 # FPS Zombie: Meraviglia
 
-Arcade-first zombie FPS built with plain `HTML/CSS/JS` and `Three.js`, set inside a quarantined industrial yard at sunset. The current build is a vertical slice with authored combat space, five escalating waves, procedural audio, pickup drops, explosive barrels, and a debug harness for browser automation.
+Arcade-first zombie FPS built with plain `HTML/CSS/JS` and `Three.js`, set inside a quarantined industrial yard at sunset. The current build is a vertical slice with authored combat space, five escalating waves, procedural audio, pickup drops, explosive barrels, and full mobile/touch support.
 
 ## Controls
 
+### Desktop
 - `W A S D` or arrow keys: move
 - `Mouse`: look
 - `Left Click`: automatic rifle
@@ -11,6 +12,15 @@ Arcade-first zombie FPS built with plain `HTML/CSS/JS` and `Three.js`, set insid
 - `Shift`: sprint
 - `F`: melee shove
 - `Esc`: unlock cursor / pause in normal mode
+
+### Mobile (Touch)
+- `Left Joystick`: move
+- `Swipe (Right side of screen)`: look
+- `FIRE Button`: automatic rifle
+- `R Button`: reload
+- `RUN Toggle`: sprint
+- `SHOVE Button`: melee shove
+- **Portrait Mode Notice:** The game requires Landscape orientation on mobile devices to play.
 
 ## Run Locally
 
@@ -38,13 +48,19 @@ The game exposes lightweight browser hooks for testing and automation:
 
 ## Current Slice Features
 
-- Authored quarantine-yard arena with cover, vehicles, floodlight towers, dust, and readable combat lanes
-- Three enemy archetypes: `Shambler`, `Runner`, and final-wave `Brute`
-- Rifle combat with recoil, tracer fire, hit feedback, reload timing, sprint stamina, and melee shove
-- Explosive barrels, pickup drops, inter-wave resupply moments, score/combo tracking, and victory/game-over overlays
-- Procedural WebAudio stingers for weapon fire, impacts, pickups, explosions, wave starts, victory, and failure
+- **Mobile First Optimization:** Responsive layout, touch controller interface, and orientation management.
+- **Atmospheric Arena:** Authored quarantine-yard arena with cover, vehicles, floodlight towers, dust, and readable combat lanes.
+- **Enemy Variety:** Three enemy archetypes: `Shambler`, `Runner`, and final-wave `Brute`.
+- **Combat Mechanics:** Rifle combat with recoil, tracer fire, hit feedback, reload timing, sprint stamina, and melee shove.
+- **Interactables:** Explosive barrels, pickup drops, score/combo tracking, and dynamic UI banners.
+- **Audio System:** Procedural WebAudio stingers for weapon fire, impacts, pickups, explosions, wave starts, victory, and failure.
 
-## Notes
+## Technical Notes
 
-- The project is desktop-first and tuned for keyboard + mouse.
-- Mobile support, persistent progression, and external asset packs are intentionally out of scope for this slice.
+- Built with **Vanilla JavaScript** and **Three.js** (No heavy frameworks).
+- **GLSL Shaders** used for low-health vignette, damage pulse, and film grain effects.
+- **State Management:** Decoupled game loop with scaled delta-time for smooth performance even on low-end devices.
+
+---
+
+*Survival is the only metric of success.*

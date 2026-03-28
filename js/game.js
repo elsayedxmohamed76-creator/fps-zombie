@@ -315,7 +315,10 @@ class FPSZombieMeraviglia {
             yaw: 0,
             pitch: -0.04,
             health: GAME_CONFIG.maxHealth,
+            armor: 0,
             stamina: GAME_CONFIG.maxStamina,
+            food: GAME_CONFIG.maxFood,
+            water: GAME_CONFIG.maxWater,
             ammo: GAME_CONFIG.maxAmmo,
             reserveAmmo: GAME_CONFIG.startingReserveAmmo,
             maxAmmo: GAME_CONFIG.maxAmmo,
@@ -449,14 +452,23 @@ class FPSZombieMeraviglia {
 
         if (this.state.mode === "playing") {
             this.updatePlayer(scaledDt);
+            this.updateSurvival(scaledDt);
             this.updateDirector(scaledDt);
             this.updateEnemies(scaledDt);
             this.updatePickups(scaledDt);
         }
 
+
+
         this.updateEffects(scaledDt);
         this.world.update(scaledDt, this.elapsed);
-        this.audio.update(scaledDt, this.player.health / GAME_CONFIG.maxHealth, this.state.mode);
+        this.audio.update(
+            scaledDt,
+            this.player.health / GAME_CONFIG.maxHealth,
+            this.player.food / GAME_CONFIG.maxFood,
+            this.player.water / GAME_CONFIG.maxWater,
+            this.state.mode
+        );
 
         this.player.fireCooldown = Math.max(0, this.player.fireCooldown - scaledDt);
         this.player.meleeCooldown = Math.max(0, this.player.meleeCooldown - scaledDt);
@@ -560,8 +572,13 @@ class FPSZombieMeraviglia {
             moveIntent.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.player.yaw);
         }
 
-        const canSprint = this.input.sprint && moving && this.player.stamina > 4 && !this.player.isReloading;
-        const speed = canSprint ? GAME_CONFIG.sprintSpeed : GAME_CONFIG.walkSpeed;
+        const isExhausted = this.player.food <= 10 || this.player.water <= 10;
+        const canSprint = this.input.sprint && moving && this.player.stamina > 4 && !this.player.isReloading && !isExhausted;
+        let speed = canSprint ? GAME_CONFIG.sprintSpeed : GAME_CONFIG.walkSpeed;
+
+        if (isExhausted) {
+            speed *= GAME_CONFIG.exhaustionSpeedMult;
+        }
 
         if (canSprint) {
             this.player.stamina = Math.max(0, this.player.stamina - GAME_CONFIG.sprintDrain * dt);
@@ -709,6 +726,18 @@ class FPSZombieMeraviglia {
             enemy.stunTimer = Math.max(enemy.stunTimer, 0.55);
             this.damageEnemy(enemy, GAME_CONFIG.meleeDamage, enemy.position.clone().setY(1.2), push.multiplyScalar(0.24));
         });
+    }
+
+    updateSurvival(dt) {
+        this.player.food = Math.max(0, this.player.food - GAME_CONFIG.foodDrain * dt);
+        this.player.water = Math.max(0, this.player.water - GAME_CONFIG.waterDrain * dt);
+
+        if (this.player.food <= 0) {
+            this.damagePlayer(GAME_CONFIG.starvationDamage * dt);
+        }
+        if (this.player.water <= 0) {
+            this.damagePlayer(GAME_CONFIG.dehydrationDamage * dt);
+        }
     }
 
     updateDirector(dt) {
@@ -918,6 +947,9 @@ class FPSZombieMeraviglia {
                 { value: "ammo", weight: this.player.reserveAmmo < 90 ? 4 : 2 },
                 { value: "medkit", weight: this.player.health < 55 ? 3 : 1 },
                 { value: "charge", weight: this.player.stamina < 45 ? 2 : 1.4 },
+                { value: "food", weight: this.player.food < 50 ? 2.5 : 0.8 },
+                { value: "water", weight: this.player.water < 50 ? 2.5 : 0.8 },
+                { value: "armor", weight: this.player.armor < 30 ? 1.8 : 0.5 },
             ]);
             this.spawnPickup(pickupType, enemy.position.x, enemy.position.z);
         }
@@ -927,7 +959,15 @@ class FPSZombieMeraviglia {
         if (this.state.mode !== "playing") {
             return;
         }
-        this.player.health = Math.max(0, this.player.health - amount);
+
+        let damageToHealth = amount;
+        if (this.player.armor > 0 && sourcePosition) { // Only physical damage is absorbed by armor
+            const absorbed = Math.min(this.player.armor, amount * 0.7);
+            this.player.armor -= absorbed;
+            damageToHealth -= absorbed;
+        }
+
+        this.player.health = Math.max(0, this.player.health - damageToHealth);
         this.screenShake = Math.max(this.screenShake, GAME_CONFIG.damageShake);
         this.ui.flashDamage();
         this.audio.playDamage();
@@ -961,6 +1001,9 @@ class FPSZombieMeraviglia {
         const supportDrops = [];
         if (this.player.reserveAmmo < 120) supportDrops.push({ type: "ammo", x: -16, z: 16 });
         if (this.player.health < 85) supportDrops.push({ type: "medkit", x: 18, z: 16 });
+        if (this.player.food < 70) supportDrops.push({ type: "food", x: -12, z: 20 });
+        if (this.player.water < 70) supportDrops.push({ type: "water", x: 12, z: 20 });
+        if (this.player.armor < 50) supportDrops.push({ type: "armor", x: 6, z: 22 });
         supportDrops.push({ type: "charge", x: 0, z: 20 });
         supportDrops.forEach((drop) => this.spawnPickup(drop.type, drop.x, drop.z));
     }
@@ -988,6 +1031,12 @@ class FPSZombieMeraviglia {
             this.player.health = Math.min(GAME_CONFIG.maxHealth, this.player.health + definition.amount);
         } else if (pickup.type === "charge") {
             this.player.stamina = Math.min(GAME_CONFIG.maxStamina, this.player.stamina + definition.amount);
+        } else if (pickup.type === "food") {
+            this.player.food = Math.min(GAME_CONFIG.maxFood, this.player.food + definition.amount);
+        } else if (pickup.type === "water") {
+            this.player.water = Math.min(GAME_CONFIG.maxWater, this.player.water + definition.amount);
+        } else if (pickup.type === "armor") {
+            this.player.armor = Math.min(GAME_CONFIG.maxArmor, this.player.armor + definition.amount);
         }
 
         this.scene.remove(pickup.group);
@@ -1144,7 +1193,10 @@ class FPSZombieMeraviglia {
             crosshairKick: this.crosshairKick,
             player: {
                 health: this.player.health,
+                armor: this.player.armor,
                 stamina: this.player.stamina,
+                food: this.player.food,
+                water: this.player.water,
                 ammo: this.player.ammo,
                 reserveAmmo: this.player.reserveAmmo,
                 maxAmmo: GAME_CONFIG.maxAmmo,
@@ -1166,6 +1218,7 @@ class FPSZombieMeraviglia {
                 yaw: Number(this.player.yaw.toFixed(3)),
                 pitch: Number(this.player.pitch.toFixed(3)),
                 health: Number(this.player.health.toFixed(1)),
+                armor: Number(this.player.armor.toFixed(1)),
                 stamina: Number(this.player.stamina.toFixed(1)),
                 ammo: this.player.ammo,
                 reserveAmmo: this.player.reserveAmmo,

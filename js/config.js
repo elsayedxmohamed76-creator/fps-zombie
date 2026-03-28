@@ -6,6 +6,14 @@ export const GAME_CONFIG = {
     playerRadius: 0.65,
     maxHealth: 100,
     maxStamina: 100,
+    maxArmor: 100,
+    maxFood: 100,
+    maxWater: 100,
+    foodDrain: 1.2,
+    waterDrain: 1.8,
+    starvationDamage: 2.5,
+    dehydrationDamage: 3.5,
+    exhaustionSpeedMult: 0.6,
     maxAmmo: 30,
     maxReserveAmmo: 240,
     startingReserveAmmo: 180,
@@ -87,6 +95,21 @@ export const PICKUP_TYPES = {
         id: "charge",
         label: "Adrenal Charge",
         amount: 42,
+    },
+    food: {
+        id: "food",
+        label: "Rations",
+        amount: 35,
+    },
+    water: {
+        id: "water",
+        label: "Water Bottle",
+        amount: 35,
+    },
+    armor: {
+        id: "armor",
+        label: "Armor Plate",
+        amount: 50,
     },
 };
 

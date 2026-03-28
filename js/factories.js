@@ -164,9 +164,20 @@ export function createPickupMesh(type) {
     let color = 0x7dd3ff;
     if (type === "medkit") color = 0xff6b6b;
     if (type === "charge") color = 0xc1ff72;
+    if (type === "food") color = 0xffa500;
+    if (type === "water") color = 0x00bfff;
+    if (type === "armor") color = 0xbdc3c7;
+
+    const coreGeometry = type === "water" 
+        ? new THREE.CylinderGeometry(0.3, 0.3, 0.7, 8)
+        : type === "food"
+            ? new THREE.BoxGeometry(0.6, 0.4, 0.6)
+            : type === "armor"
+                ? new THREE.BoxGeometry(0.5, 0.7, 0.15)
+                : new THREE.OctahedronGeometry(0.44, 0);
 
     const core = new THREE.Mesh(
-        new THREE.OctahedronGeometry(0.44, 0),
+        coreGeometry,
         new THREE.MeshStandardMaterial({
             color,
             emissive: color,

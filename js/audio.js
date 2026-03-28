@@ -25,15 +25,16 @@ export class ProceduralAudio {
         }
     }
 
-    update(dt, healthRatio, mode) {
+    update(dt, healthRatio, foodRatio, waterRatio, mode) {
         if (!this.ctx || this.ctx.state !== "running" || mode !== "playing") {
             return;
         }
 
         this.lowPulseTimer -= dt;
-        if (healthRatio <= 0.33 && this.lowPulseTimer <= 0) {
+        if ((healthRatio <= 0.33 || foodRatio <= 0.2 || waterRatio <= 0.2) && this.lowPulseTimer <= 0) {
             this.lowPulseTimer = 0.92;
-            this.#tone(98, 0.16, "triangle", 0.08, 0.02, 0.2);
+            const freq = healthRatio <= 0.33 ? 98 : foodRatio <= 0.2 ? 110 : 125;
+            this.#tone(freq, 0.16, "triangle", 0.08, 0.02, 0.2);
         }
     }
 
@@ -69,7 +70,7 @@ export class ProceduralAudio {
 
     playPickup(type) {
         if (!this.#ready()) return;
-        const base = type === "ammo" ? 290 : type === "medkit" ? 360 : 420;
+        const base = type === "ammo" ? 290 : type === "medkit" ? 360 : type === "food" ? 310 : type === "water" ? 440 : 420;
         this.#tone(base, 0.08, "triangle", 0.05, 0.01, 0.07);
         this.#tone(base * 1.5, 0.1, "sine", 0.03, 0.02, 0.08);
     }

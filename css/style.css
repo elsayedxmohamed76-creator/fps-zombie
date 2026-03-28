@@ -267,11 +267,24 @@ canvas {
     border-color: rgba(255, 95, 95, 0.25);
 }
 
+.hud-armor {
+    border-color: rgba(200, 200, 200, 0.25);
+}
+
 .hud-stamina {
     border-color: rgba(193, 255, 114, 0.22);
 }
 
+.hud-food {
+    border-color: rgba(255, 165, 0, 0.22);
+}
+
+.hud-water {
+    border-color: rgba(0, 191, 255, 0.22);
+}
+
 .hud-ammo {
+
     border-color: rgba(125, 211, 255, 0.22);
 }
 
@@ -324,11 +337,24 @@ canvas {
     background: linear-gradient(90deg, #ff4d4d, #ff7b5c);
 }
 
+#armorBar {
+    background: linear-gradient(90deg, #d1d5db, #9ca3af);
+}
+
 #staminaBar {
     background: linear-gradient(90deg, #c1ff72, #72ffc6);
 }
 
+#foodBar {
+    background: linear-gradient(90deg, #ffa500, #ffd700);
+}
+
+#waterBar {
+    background: linear-gradient(90deg, #00bfff, #1e90ff);
+}
+
 #ammoBar {
+
     background: linear-gradient(90deg, #7dd3ff, #b7f0ff);
 }
 
