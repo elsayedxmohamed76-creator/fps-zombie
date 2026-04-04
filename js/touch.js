@@ -188,7 +188,9 @@ export class TouchController {
     }
 
     _onTouchStart(e) {
-        e.preventDefault();
+        if (!e.target.closest('.overlay')) {
+            e.preventDefault();
+        }
         const w = window.innerWidth;
 
         for (const touch of e.changedTouches) {
@@ -216,7 +218,9 @@ export class TouchController {
     }
 
     _onTouchMove(e) {
-        e.preventDefault();
+        if (!e.target.closest('.overlay')) {
+            e.preventDefault();
+        }
         for (const touch of e.changedTouches) {
             const id = touch.identifier;
             if (id === this._joystickTouchId) {

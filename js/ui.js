@@ -38,6 +38,7 @@ export class UIController {
         this.waveBanner = document.getElementById("waveBanner");
         this.waveBannerTitle = document.getElementById("waveBannerTitle");
         this.waveBannerSubtitle = document.getElementById("waveBannerSubtitle");
+        this.compassDir = document.getElementById("compassDir");
 
         this.bannerTimer = 0;
         this.hitMarkerTimer = 0;
@@ -62,6 +63,13 @@ export class UIController {
         this.scoreValue.textContent = snapshot.score.toLocaleString();
         this.comboValue.textContent = formatCombo(snapshot.combo);
         this.objectiveText.textContent = snapshot.objective;
+
+        // Compass
+        if (this.compassDir && snapshot.player.yaw !== undefined) {
+            const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+            const idx = Math.round(((-snapshot.player.yaw % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2) / (Math.PI / 4)) % 8;
+            this.compassDir.textContent = dirs[idx];
+        }
 
         this.healthBar.style.width = `${snapshot.player.health}%`;
         this.armorBar.style.width = `${snapshot.player.armor}%`;
@@ -121,7 +129,7 @@ export class UIController {
 
         if (mode === "intro") {
             this.overlayTag.textContent = payload.tag ?? "Arcade Zombie FPS";
-            this.overlayTitle.textContent = payload.title ?? "Meraviglia";
+            this.overlayTitle.textContent = payload.title ?? "Zombi Craft";
             this.overlayLead.textContent = payload.lead ?? "Survive five waves and secure the final extraction route.";
             this.overlayMeta.textContent = payload.meta ?? "Deploy to begin the breach response.";
             this.overlayScore.textContent = "";
@@ -139,7 +147,7 @@ export class UIController {
             this.overlayScore.textContent = payload.scoreText ?? "";
         } else if (mode === "victory") {
             this.overlayTag.textContent = "Extraction Secured";
-            this.overlayTitle.textContent = "Meraviglia Holds";
+            this.overlayTitle.textContent = "Zombi Craft Holds";
             this.overlayLead.textContent = payload.lead ?? "The brute is down and the route is clear. You kept the quarantine line intact.";
             this.overlayMeta.textContent = payload.meta ?? "Restart to push for a cleaner, higher-score run.";
             this.overlayScore.textContent = payload.scoreText ?? "";

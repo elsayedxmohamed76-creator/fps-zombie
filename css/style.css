@@ -161,6 +161,30 @@ canvas {
     justify-content: space-between;
 }
 
+#compass {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 28px;
+    background: linear-gradient(180deg, rgba(12, 22, 33, 0.85), rgba(5, 11, 18, 0.7));
+    border: 1px solid rgba(125, 211, 255, 0.18);
+    border-radius: 999px;
+    backdrop-filter: blur(8px);
+    z-index: 50;
+}
+
+#compassDir {
+    font-family: "Bebas Neue", sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.15em;
+    color: var(--accent-cold);
+}
+
 .hud-top,
 .hud-bottom {
     display: flex;
@@ -284,7 +308,6 @@ canvas {
 }
 
 .hud-ammo {
-
     border-color: rgba(125, 211, 255, 0.22);
 }
 
@@ -354,7 +377,6 @@ canvas {
 }
 
 #ammoBar {
-
     background: linear-gradient(90deg, #7dd3ff, #b7f0ff);
 }
 
@@ -520,6 +542,7 @@ body.low-health #lowHealthVignette {
     opacity: 1;
 }
 
+/* ── Responsive: tablets ── */
 @media (max-width: 960px) {
     #hud {
         padding: 18px 18px 20px;
@@ -548,6 +571,7 @@ body.low-health #lowHealthVignette {
     }
 }
 
+/* ── Responsive: phones ── */
 @media (max-width: 640px) {
     .control-grid {
         grid-template-columns: minmax(0, 1fr);
@@ -558,320 +582,163 @@ body.low-health #lowHealthVignette {
     }
 }
 
-/* Touch device optimizations */
+/* ── Touch device optimizations ── */
 @media (hover: none) and (pointer: coarse) {
     .crosshair-ring,
     .crosshair-line.horizontal,
     .crosshair-line.vertical {
         opacity: 0.4;
     }
-    
+
     #hud {
         padding: 12px 14px 16px;
     }
-    
+
     .value {
         font-size: 2rem;
     }
-    
+
     .value.small {
         font-size: 1.5rem;
     }
-    
+
     .hud-card {
         min-width: 110px;
         padding: 10px 12px 12px;
     }
-    
+
     .hud-card.compact {
         min-width: 80px;
         padding: 8px 10px 10px;
     }
-    
+
     .brand {
         font-size: 1.6rem;
     }
-    
+
     .objective-text {
         font-size: 0.82rem;
     }
-    
+
     .wave-banner {
         min-width: 200px;
         padding: 8px 16px;
     }
-    
+
     #waveBannerTitle {
         font-size: 1.4rem;
     }
-    
+
     .overlay h1 {
         font-size: clamp(3rem, 12vw, 5rem);
     }
-    
+
     .overlay-panel {
         padding: 20px 18px 18px;
         border-radius: 20px;
     }
-    
+
     .control-item {
         padding: 10px 12px;
     }
 }
 
-/* Very small screens */
+/* ── Very small screens ── */
 @media (max-width: 400px) {
     #hud {
         padding: 8px 10px 12px;
     }
-    
+
     .value {
         font-size: 1.6rem;
     }
-    
+
     .value.small {
         font-size: 1.3rem;
     }
-    
+
     .hud-card {
         min-width: 90px;
         padding: 8px 10px 10px;
     }
-    
+
     .meter {
         height: 4px;
         margin-top: 8px;
     }
-    
+
     .eyebrow {
         font-size: 0.6rem;
     }
-    
+
     .brand {
         font-size: 1.3rem;
     }
 }
 
-/* Landscape phone optimization */
+/* ── Landscape phone optimization ── */
 @media (max-height: 500px) and (orientation: landscape) {
     #hud {
         padding: 6px 12px 8px;
     }
-    
+
     .hud-top {
         flex-direction: row;
     }
-    
+
     .hud-bottom {
         flex-direction: row;
     }
-    
+
     .value {
         font-size: 1.5rem;
     }
-    
+
     .value.small {
         font-size: 1.2rem;
     }
-    
+
     .hud-card {
         min-width: 100px;
         padding: 6px 10px 8px;
     }
-    
+
     .hud-card.compact {
         min-width: 70px;
     }
-    
+
     .meter {
         height: 3px;
         margin-top: 4px;
     }
-    
+
     .overlay-panel {
         padding: 14px 16px 12px;
         max-height: 90vh;
         overflow-y: auto;
     }
-    
+
     .overlay h1 {
         font-size: 2.5rem;
         margin: 10px 0 8px;
     }
-    
+
     .overlay-lead {
         font-size: 0.85rem;
         margin-bottom: 12px;
     }
-    
+
     .control-grid {
         gap: 6px;
         margin: 12px 0;
     }
-    
+
     .control-item {
         padding: 8px 10px;
     }
 }
 
-
-/* Touch device optimizations */
-@media (hover: none) and (pointer: coarse) {
-    .crosshair-ring,
-    .crosshair-line.horizontal,
-    .crosshair-line.vertical {
-        opacity: 0.4;
-    }
-    
-    #hud {
-        padding: 12px 14px 16px;
-    }
-    
-    .value {
-        font-size: 2rem;
-    }
-    
-    .value.small {
-        font-size: 1.5rem;
-    }
-    
-    .hud-card {
-        min-width: 110px;
-        padding: 10px 12px 12px;
-    }
-    
-    .hud-card.compact {
-        min-width: 80px;
-        padding: 8px 10px 10px;
-    }
-    
-    .brand {
-        font-size: 1.6rem;
-    }
-    
-    .objective-text {
-        font-size: 0.82rem;
-    }
-    
-    .wave-banner {
-        min-width: 200px;
-        padding: 8px 16px;
-    }
-    
-    #waveBannerTitle {
-        font-size: 1.4rem;
-    }
-    
-    .overlay h1 {
-        font-size: clamp(3rem, 12vw, 5rem);
-    }
-    
-    .overlay-panel {
-        padding: 20px 18px 18px;
-        border-radius: 20px;
-    }
-    
-    .control-item {
-        padding: 10px 12px;
-    }
-}
-
-/* Very small screens */
-@media (max-width: 400px) {
-    #hud {
-        padding: 8px 10px 12px;
-    }
-    
-    .value {
-        font-size: 1.6rem;
-    }
-    
-    .value.small {
-        font-size: 1.3rem;
-    }
-    
-    .hud-card {
-        min-width: 90px;
-        padding: 8px 10px 10px;
-    }
-    
-    .meter {
-        height: 4px;
-        margin-top: 8px;
-    }
-    
-    .eyebrow {
-        font-size: 0.6rem;
-    }
-    
-    .brand {
-        font-size: 1.3rem;
-    }
-}
-
-/* Landscape phone optimization */
-@media (max-height: 500px) and (orientation: landscape) {
-    #hud {
-        padding: 6px 12px 8px;
-    }
-    
-    .hud-top {
-        flex-direction: row;
-    }
-    
-    .hud-bottom {
-        flex-direction: row;
-    }
-    
-    .value {
-        font-size: 1.5rem;
-    }
-    
-    .value.small {
-        font-size: 1.2rem;
-    }
-    
-    .hud-card {
-        min-width: 100px;
-        padding: 6px 10px 8px;
-    }
-    
-    .hud-card.compact {
-        min-width: 70px;
-    }
-    
-    .meter {
-        height: 3px;
-        margin-top: 4px;
-    }
-    
-    .overlay-panel {
-        padding: 14px 16px 12px;
-        max-height: 90vh;
-        overflow-y: auto;
-    }
-    
-    .overlay h1 {
-        font-size: 2.5rem;
-        margin: 10px 0 8px;
-    }
-    
-    .overlay-lead {
-        font-size: 0.85rem;
-        margin-bottom: 12px;
-    }
-    
-    .control-grid {
-        gap: 6px;
-        margin: 12px 0;
-    }
-    
-    .control-item {
-        padding: 8px 10px;
-    }
-}
-
-/* Portrait Warning Overlay */
+/* ── Portrait Warning Overlay ── */
 .portrait-warning {
     display: none;
     position: fixed;
@@ -937,7 +804,7 @@ body.low-health #lowHealthVignette {
     .portrait-warning {
         display: flex;
     }
-    
+
     /* Hide game elements to prevent interaction */
     #gameRoot, #hud, .overlay, #crosshair, #screenFx {
         display: none !important;

@@ -1,15 +1,15 @@
 import * as THREE from "three";
-import { ProceduralAudio } from "./audio.js";
-import { ENEMY_TYPES, FIXED_DT, GAME_CONFIG, PICKUP_TYPES, WAVE_CONFIGS } from "./config.js";
-import { createEnemyMesh, createPickupMesh, createTracer, createWeaponMesh } from "./factories.js";
-import { UIController } from "./ui.js";
-import { TouchController } from "./touch.js";
-import { createWorld, moveAndCollide } from "./world.js";
-import { clamp, createRng, distanceXZ, forwardFromAngles, pickWeighted, range, shuffle } from "./utils.js";
+import { ProceduralAudio } from "./audio.js?v=7";
+import { ENEMY_TYPES, FIXED_DT, GAME_CONFIG, PICKUP_TYPES, WAVE_CONFIGS } from "./config.js?v=7";
+import { createEnemyMesh, createPickupMesh, createTracer, createWeaponMesh } from "./factories.js?v=7";
+import { UIController } from "./ui.js?v=7";
+import { TouchController } from "./touch.js?v=7";
+import { createWorld, moveAndCollide } from "./world.js?v=7";
+import { clamp, createRng, distanceXZ, forwardFromAngles, pickWeighted, range, shuffle } from "./utils.js?v=7";
 
 const params = new URLSearchParams(window.location.search);
 
-class FPSZombieMeraviglia {
+class FPSZombieCraft {
     constructor() {
         this.options = {
             debug: params.get("debug") === "1",
@@ -33,15 +33,18 @@ class FPSZombieMeraviglia {
         this.slowMoScale = 1;
 
         this.scene = new THREE.Scene();
-        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 180);
+        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 300);
         this.cameraRig = new THREE.Group();
         this.pitchPivot = new THREE.Group();
         this.scene.add(this.cameraRig);
         this.cameraRig.add(this.pitchPivot);
         this.pitchPivot.add(this.camera);
 
-        this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8));
+        // Detect mobile for optimization
+        this.isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 0 && window.innerWidth < 1024);
+
+        this.renderer = new THREE.WebGLRenderer({ antialias: !this.isMobile, powerPreference: "high-performance" });
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, this.isMobile ? 1.2 : 1.8));
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -49,8 +52,17 @@ class FPSZombieMeraviglia {
         this.renderer.domElement.tabIndex = 0;
         document.getElementById("gameRoot").appendChild(this.renderer.domElement);
 
+        // Minimap
+        this.minimapCanvas = document.createElement("canvas");
+        this.minimapCanvas.width = 160;
+        this.minimapCanvas.height = 160;
+        const mmSize = this.isMobile ? 120 : 160;
+        this.minimapCanvas.style.cssText = `position:fixed;bottom:${this.isMobile ? 100 : 16}px;right:${this.isMobile ? 100 : 16}px;width:${mmSize}px;height:${mmSize}px;border-radius:50%;border:2px solid rgba(125,211,255,0.3);z-index:50;pointer-events:none;opacity:0.85;`;
+        this.minimapCtx = this.minimapCanvas.getContext("2d");
+        document.body.appendChild(this.minimapCanvas);
+
         this.flashlight = new THREE.SpotLight(0xffddb1, 3.4, 48, Math.PI / 4.6, 0.4, 1.65);
-        this.flashlight.castShadow = true;
+        this.flashlight.castShadow = false;
         this.flashlight.position.set(0, 0.15, 0.15);
         this.flashlight.target.position.set(0, -0.08, -6);
         this.pitchPivot.add(this.flashlight);
@@ -458,8 +470,6 @@ class FPSZombieMeraviglia {
             this.updatePickups(scaledDt);
         }
 
-
-
         this.updateEffects(scaledDt);
         this.world.update(scaledDt, this.elapsed);
         this.audio.update(
@@ -557,7 +567,7 @@ class FPSZombieMeraviglia {
     }
 
     updatePlayer(dt) {
-        const interactive = this.options.debug || this.pointerLocked;
+        const interactive = this.options.debug || this.pointerLocked || this.isTouch;
         if (!interactive) {
             return;
         }
@@ -600,7 +610,8 @@ class FPSZombieMeraviglia {
         const bob = Math.sin(this.elapsed * (canSprint ? 12 : 8)) * bobAmount;
         const sway = Math.cos(this.elapsed * (canSprint ? 10 : 7)) * bobAmount * 0.55;
 
-        this.cameraRig.position.set(this.player.position.x, GAME_CONFIG.playerHeight, this.player.position.z);
+        const terrainH = this.world.getTerrainHeight(this.player.position.x, this.player.position.z);
+        this.cameraRig.position.set(this.player.position.x, terrainH + GAME_CONFIG.playerHeight, this.player.position.z);
         this.cameraRig.rotation.y = this.player.yaw;
         this.pitchPivot.rotation.x = this.player.pitch;
 
@@ -674,7 +685,8 @@ class FPSZombieMeraviglia {
         this.scene.add(tracer);
         this.dynamic.tracers.push({ line: tracer, life: 0.08 });
 
-        this.spawnParticles(endPoint, intersections.length > 0 ? 0xff784d : 0xffd699, intersections.length > 0 ? 7 : 3, 2.2);
+        const particleCount = this.isMobile ? (intersections.length > 0 ? 4 : 2) : (intersections.length > 0 ? 7 : 3);
+        this.spawnParticles(endPoint, intersections.length > 0 ? 0xff784d : 0xffd699, particleCount, 2.2);
     }
 
     tryReload() {
@@ -804,8 +816,9 @@ class FPSZombieMeraviglia {
         const config = ENEMY_TYPES[typeId];
         const spawn = this.pickSpawnPoint();
         const visual = createEnemyMesh(config);
+        const terrainH = this.world.getTerrainHeight(spawn.x, spawn.z);
         const baseHeight = visual.group.position.y;
-        visual.group.position.set(spawn.x, baseHeight, spawn.z);
+        visual.group.position.set(spawn.x, terrainH + baseHeight - 1.05, spawn.z);
         this.scene.add(visual.group);
 
         const enemy = {
@@ -895,8 +908,9 @@ class FPSZombieMeraviglia {
 
             const strideSpeed = enemy.typeId === "runner" ? 11 : enemy.typeId === "brute" ? 4.8 : 7.6;
             const stride = Math.sin(this.elapsed * strideSpeed + enemy.stridePhase);
-            enemy.mesh.position.set(enemy.position.x, enemy.baseHeight + stride * 0.06, enemy.position.z);
-            enemy.mesh.lookAt(this.player.position.x, enemy.baseHeight, this.player.position.z);
+            const terrainH = this.world.getTerrainHeight(enemy.position.x, enemy.position.z);
+            enemy.mesh.position.set(enemy.position.x, terrainH + enemy.baseHeight - 1.05 + stride * 0.06, enemy.position.z);
+            enemy.mesh.lookAt(this.player.position.x, terrainH + enemy.baseHeight - 1.05, this.player.position.z);
 
             enemy.animatedParts.forEach((part, index) => {
                 part.rotation.x = stride * (index % 2 === 0 ? 0.58 : -0.58);
@@ -914,7 +928,8 @@ class FPSZombieMeraviglia {
         if (pushImpulse) {
             enemy.knockback.add(pushImpulse);
         }
-        this.spawnParticles(hitPoint, enemy.typeId === "brute" ? 0x8fdcff : 0xff4d4d, enemy.typeId === "brute" ? 9 : 6, enemy.typeId === "brute" ? 3.8 : 2.8);
+        const particleCount = this.isMobile ? (enemy.typeId === "brute" ? 5 : 3) : (enemy.typeId === "brute" ? 9 : 6);
+        this.spawnParticles(hitPoint, enemy.typeId === "brute" ? 0x8fdcff : 0xff4d4d, particleCount, enemy.typeId === "brute" ? 3.8 : 2.8);
 
         if (enemy.health > 0) {
             return;
@@ -930,7 +945,8 @@ class FPSZombieMeraviglia {
         }
         this.scene.remove(enemy.mesh);
         this.audio.playKill();
-        this.spawnParticles(hitPoint ?? enemy.position.clone().setY(1), enemy.typeId === "brute" ? 0x8fdcff : 0xff6a54, enemy.typeId === "brute" ? 18 : 10, enemy.typeId === "brute" ? 4.5 : 3.2);
+        const particleCount = this.isMobile ? (enemy.typeId === "brute" ? 10 : 5) : (enemy.typeId === "brute" ? 18 : 10);
+        this.spawnParticles(hitPoint ?? enemy.position.clone().setY(1), enemy.typeId === "brute" ? 0x8fdcff : 0xff6a54, particleCount, enemy.typeId === "brute" ? 4.5 : 3.2);
 
         this.state.kills += 1;
         this.state.comboTimer = GAME_CONFIG.comboWindow;
@@ -961,7 +977,7 @@ class FPSZombieMeraviglia {
         }
 
         let damageToHealth = amount;
-        if (this.player.armor > 0 && sourcePosition) { // Only physical damage is absorbed by armor
+        if (this.player.armor > 0 && sourcePosition) {
             const absorbed = Math.min(this.player.armor, amount * 0.7);
             this.player.armor -= absorbed;
             damageToHealth -= absorbed;
@@ -1056,7 +1072,8 @@ class FPSZombieMeraviglia {
         this.screenShake = Math.max(this.screenShake, GAME_CONFIG.explosionShake);
 
         const origin = new THREE.Vector3(barrel.group.position.x, 0, barrel.group.position.z);
-        this.spawnParticles(origin.clone().setY(1), 0xff8b4d, 28, 5.4);
+        const particleCount = this.isMobile ? 15 : 28;
+        this.spawnParticles(origin.clone().setY(1), 0xff8b4d, particleCount, 5.4);
 
         for (const enemy of [...this.dynamic.enemies]) {
             const dist = distanceXZ(enemy.position, origin);
@@ -1102,7 +1119,7 @@ class FPSZombieMeraviglia {
     spawnParticles(position, color, count, power) {
         for (let i = 0; i < count; i++) {
             const mesh = new THREE.Mesh(
-                new THREE.SphereGeometry(0.06, 6, 6),
+                new THREE.SphereGeometry(0.06, 5, 5),
                 new THREE.MeshBasicMaterial({
                     color,
                     transparent: true,
@@ -1200,6 +1217,9 @@ class FPSZombieMeraviglia {
                 ammo: this.player.ammo,
                 reserveAmmo: this.player.reserveAmmo,
                 maxAmmo: GAME_CONFIG.maxAmmo,
+                x: this.player.position.x,
+                z: this.player.position.z,
+                yaw: this.player.yaw,
             },
         };
     }
@@ -1246,7 +1266,8 @@ class FPSZombieMeraviglia {
     }
 
     render() {
-        this.cameraRig.position.set(this.player.position.x, GAME_CONFIG.playerHeight, this.player.position.z);
+        const terrainH = this.world.getTerrainHeight(this.player.position.x, this.player.position.z);
+        this.cameraRig.position.set(this.player.position.x, terrainH + GAME_CONFIG.playerHeight, this.player.position.z);
         this.cameraRig.rotation.y = this.player.yaw;
         this.pitchPivot.rotation.x = this.player.pitch;
 
@@ -1261,7 +1282,88 @@ class FPSZombieMeraviglia {
         }
         this.camera.position.copy(this.screenShakeOffset);
         this.renderer.render(this.scene, this.camera);
+        this.renderMinimap();
+    }
+
+    renderMinimap() {
+        const ctx = this.minimapCtx;
+        const size = this.minimapCanvas.width;
+        const scale = 1.2;
+        ctx.clearRect(0, 0, size, size);
+
+        // Background circle
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.fillStyle = "rgba(5, 10, 16, 0.88)";
+        ctx.fillRect(0, 0, size, size);
+
+        const px = this.player.position.x;
+        const pz = this.player.position.z;
+
+        // Draw houses as small rects
+        ctx.fillStyle = "rgba(125, 211, 255, 0.15)";
+        for (const c of this.world.colliders) {
+            const dx = (c.x - px) * scale;
+            const dz = (c.z - pz) * scale;
+            const sx = size / 2 + dx;
+            const sy = size / 2 + dz;
+            if (Math.abs(dx) < size / 2 && Math.abs(dz) < size / 2) {
+                ctx.fillRect(sx - c.halfX * scale, sy - c.halfZ * scale, c.halfX * 2 * scale, c.halfZ * 2 * scale);
+            }
+        }
+
+        // Draw enemies as red dots
+        ctx.fillStyle = "#ff4d4d";
+        for (const enemy of this.dynamic.enemies) {
+            const dx = (enemy.position.x - px) * scale;
+            const dz = (enemy.position.z - pz) * scale;
+            const sx = size / 2 + dx;
+            const sy = size / 2 + dz;
+            if (Math.abs(dx) < size / 2 && Math.abs(dz) < size / 2) {
+                ctx.beginPath();
+                ctx.arc(sx, sy, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Draw pickups as green dots
+        ctx.fillStyle = "#c1ff72";
+        for (const pickup of this.dynamic.pickups) {
+            const dx = (pickup.x - px) * scale;
+            const dz = (pickup.z - pz) * scale;
+            const sx = size / 2 + dx;
+            const sy = size / 2 + dz;
+            if (Math.abs(dx) < size / 2 && Math.abs(dz) < size / 2) {
+                ctx.beginPath();
+                ctx.arc(sx, sy, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Player arrow
+        ctx.save();
+        ctx.translate(size / 2, size / 2);
+        ctx.rotate(-this.player.yaw);
+        ctx.fillStyle = "#ff6a00";
+        ctx.beginPath();
+        ctx.moveTo(0, -7);
+        ctx.lineTo(-5, 5);
+        ctx.lineTo(5, 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // Border ring
+        ctx.restore();
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, size / 2 - 1, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(125, 211, 255, 0.35)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
     }
 }
 
-new FPSZombieMeraviglia();
+// Initialize game
+new FPSZombieCraft();

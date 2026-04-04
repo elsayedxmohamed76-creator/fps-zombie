@@ -1,6 +1,6 @@
-# FPS Zombie: Meraviglia
+# Zombi Craft — by DIEGO.F
 
-Arcade-first zombie FPS built with plain `HTML/CSS/JS` and `Three.js`, set inside a quarantined industrial yard at sunset. The current build is a vertical slice with authored combat space, five escalating waves, procedural audio, pickup drops, explosive barrels, and full mobile/touch support.
+Open-world zombie survival FPS built with plain `HTML/CSS/JS` and `Three.js`, set in a vast procedurally-generated landscape with terrain, vegetation, houses, and roads. Explore, survive five escalating waves, and stay alive. — Created by DIEGO.F
 
 ## Controls
 
@@ -49,7 +49,7 @@ The game exposes lightweight browser hooks for testing and automation:
 ## Current Slice Features
 
 - **Mobile First Optimization:** Responsive layout, touch controller interface, and orientation management.
-- **Atmospheric Arena:** Authored quarantine-yard arena with cover, vehicles, floodlight towers, dust, and readable combat lanes.
+- **Atmospheric Open World:** Procedurally-generated terrain, 150+ trees, 60+ bushes, 12 houses, 2 large buildings, roads, streetlights, and the quarantine yard.
 - **Enemy Variety:** Three enemy archetypes: `Shambler`, `Runner`, and final-wave `Brute`.
 - **Combat Mechanics:** Rifle combat with recoil, tracer fire, hit feedback, reload timing, sprint stamina, and melee shove.
 - **Interactables:** Explosive barrels, pickup drops, score/combo tracking, and dynamic UI banners.

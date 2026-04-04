@@ -1,0 +1,24 @@
+{
+  "name": "fps-zombie",
+  "version": "1.0.0",
+  "description": "Open-world zombie survival FPS built with plain `HTML/CSS/JS` and `Three.js`, set in a vast procedurally-generated landscape with terrain, vegetation, houses, and roads. Explore, survive five escalating waves, and stay alive. — Created by DIEGO.F",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elsayedxmohamed76-creator/fps-zombie.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/elsayedxmohamed76-creator/fps-zombie/issues"
+  },
+  "homepage": "https://github.com/elsayedxmohamed76-creator/fps-zombie#readme",
+  "dependencies": {
+    "puppeteer": "^24.40.0"
+  }
+}

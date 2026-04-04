@@ -7,12 +7,12 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#09131c">
-    <title>FPS Zombie: Meraviglia</title>
+    <title>Zombi Craft - DIEGO.F</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2309141f'/%3E%3Cpath d='M16 48 30 16h5L21 48z' fill='%23ff6a00'/%3E%3Cpath d='M36 16h12L28 48H16z' fill='%237dd3ff' opacity='.9'/%3E%3C/svg%3E">
-    <link rel="stylesheet" href="css/style.css?v=3">
+    <link rel="stylesheet" href="css/style.css?v=4">
     <script type="importmap">
         {
             "imports": {
@@ -38,14 +38,17 @@
     </div>
 
     <div id="hud">
+        <div id="compass" aria-hidden="true">
+            <span id="compassDir">N</span>
+        </div>
         <div class="hud-top">
             <div class="brand-block">
-                <span class="eyebrow">Quarantine Yard 17</span>
-                <span class="brand">Meraviglia</span>
+                <span class="eyebrow">Open World Zombie Survival — by DIEGO.F</span>
+                <span class="brand">Zombi Craft</span>
             </div>
             <div class="objective-block">
                 <span class="eyebrow">Objective</span>
-                <span id="objectiveText" class="objective-text">Deploy and survive the first wave.</span>
+                <span id="objectiveText" class="objective-text">Explore the world and survive the waves.</span>
             </div>
         </div>
 
@@ -131,7 +134,7 @@
         <div class="overlay-noise"></div>
         <div class="overlay-panel">
             <span id="overlayTag" class="overlay-tag">Arcade Zombie FPS</span>
-            <h1 id="overlayTitle">Meraviglia</h1>
+            <h1 id="overlayTitle">Zombi Craft</h1>
             <p id="overlayLead" class="overlay-lead">
                 Sunset over a broken quarantine yard. Five waves. One last extraction route. Keep moving and make the infected regret the breach.
             </p>
@@ -159,7 +162,7 @@
             </div>
 
             <p id="overlayMeta" class="overlay-meta">
-                Click deploy to lock in, flood the yard with muzzle flash, and survive the breach.
+                Click deploy to lock in, explore the open world, and survive the breach. — Created by DIEGO.F
             </p>
             <p id="overlayScore" class="overlay-score"></p>
         </div>
@@ -174,7 +177,7 @@
                 </svg>
             </div>
             <h2>Rotate Device</h2>
-            <p>Please rotate your device to landscape mode to play Meraviglia.</p>
+            <p>Please rotate your device to landscape mode to play Zombi Craft.</p>
         </div>
     </div>
 
@@ -187,6 +190,6 @@
             if (touch) touch.style.display = 'grid';
         }
     </script>
-    <script type="module" src="js/game.js?v=3"></script>
+    <script type="module" src="js/game.js?v=6"></script>
 </body>
 </html>
